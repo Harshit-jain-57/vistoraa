@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  OWNER
+  ADMIN
+  STAFF
+  SUPER_ADMIN
+}
+
+enum AvailabilityStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+  BACKORDER
+  DISCONTINUED
+}
+
+enum AttributeDataType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+  JSON
+}
+
+enum ShowroomRequestStatus {
+  PENDING
+  ACCEPTED
+  PICKING
+  READY_TO_SHOW
+  COMPLETED
+  CANCELLED
+  UNAVAILABLE
+}
+
+enum ShowroomRequestItemStatus {
+  REQUESTED
+  PICKED
+  READY
+  SHOWN
+  UNAVAILABLE
+  CANCELLED
+}
+
+model Store {
+  id                 String                @id @default(cuid())
+  name               String
+  slug               String                @unique
+  logoUrl            String?
+  themeConfig        Json?
+  contactDetails     Json?
+  address            Json?
+  isActive           Boolean               @default(true)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  users              User[]
+  products           Product[]
+  categories         Category[]
+  tags               Tag[]
+  attributeDefinitions AttributeDefinition[]
+  visibilityRules    VisibilityRule[]
+  customerSessions   CustomerSession[]
+  showroomRequests   ShowroomRequest[]
+  auditLogs          AuditLog[]
+
+  @@index([isActive])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        RoleName @unique
+  description String
+  users       User[]
+}
+
+model User {
+  id               String            @id @default(cuid())
+  storeId          String
+  name             String
+  email            String
+  phone            String?
+  passwordHash     String
+  roleId           String
+  isActive         Boolean           @default(true)
+  lastLoginAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  store            Store             @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  role             Role              @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  createdProducts  Product[]         @relation("ProductCreatedBy")
+  updatedProducts  Product[]         @relation("ProductUpdatedBy")
+  acceptedRequests ShowroomRequest[] @relation("RequestAcceptedBy")
+  auditLogs        AuditLog[]
+  refreshTokens    RefreshToken[]
+
+  @@unique([storeId, email])
+  @@index([storeId, roleId, isActive])
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  storeId     String
+  parentId    String?
+  name        String
+  slug        String
+  description String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+  store       Store      @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+
+  @@unique([storeId, slug])
+  @@index([storeId, parentId, isActive])
+}
+
+model Product {
+  id                 String             @id @default(cuid())
+  storeId            String
+  categoryId         String?
+  name               String
+  slug               String
+  description        String?
+  sku                String
+  publicCode         String?
+  fabric             String?
+  colour             String?
+  pattern            String?
+  occasion           String?
+  brand              String?
+  visiblePrice       Decimal?           @db.Decimal(10, 2)
+  internalCost       Decimal?           @db.Decimal(10, 2)
+  margin             Decimal?           @db.Decimal(10, 2)
+  supplierName       String?
+  stockQty           Int                @default(0)
+  availabilityStatus AvailabilityStatus @default(IN_STOCK)
+  isFeatured         Boolean            @default(false)
+  isPublic           Boolean            @default(true)
+  isArchived         Boolean            @default(false)
+  deletedAt          DateTime?
+  createdById        String?
+  updatedById        String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  store              Store              @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  category           Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdBy          User?              @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy          User?              @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  images             ProductImage[]
+  tags               ProductTag[]
+  attributeValues    ProductAttributeValue[]
+  shortlistItems     ShortlistItem[]
+  requestItems       ShowroomRequestItem[]
+
+  @@unique([storeId, slug])
+  @@unique([storeId, sku])
+  @@index([storeId, categoryId, isPublic, isArchived])
+  @@index([storeId, name, colour, fabric, occasion])
+}
+
+model ProductImage {
+  id         String   @id @default(cuid())
+  productId  String
+  imageUrl   String
+  altText    String?
+  sortOrder  Int      @default(0)
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sortOrder])
+}
+
+model Tag {
+  id        String       @id @default(cuid())
+  storeId   String
+  name      String
+  slug      String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  store     Store        @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  products  ProductTag[]
+
+  @@unique([storeId, slug])
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+}
+
+model AttributeDefinition {
+  id           String            @id @default(cuid())
+  storeId      String
+  name         String
+  slug         String
+  dataType     AttributeDataType @default(TEXT)
+  isFilterable Boolean           @default(false)
+  isPublic     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  store        Store             @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  values       ProductAttributeValue[]
+
+  @@unique([storeId, slug])
+}
+
+model ProductAttributeValue {
+  id                    String              @id @default(cuid())
+  productId             String
+  attributeDefinitionId String
+  value                 String
+  product               Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeDefinition   AttributeDefinition @relation(fields: [attributeDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, attributeDefinitionId])
+}
+
+model VisibilityRule {
+  id                 String   @id @default(cuid())
+  storeId            String
+  fieldName          String
+  isPublic           Boolean  @default(false)
+  visibleToStaff     Boolean  @default(true)
+  visibleToAdminOnly Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, fieldName])
+}
+
+model CustomerSession {
+  id             String           @id @default(cuid())
+  storeId        String
+  sessionToken   String           @unique
+  customerName   String?
+  mobileNumber   String?
+  createdAt      DateTime         @default(now())
+  lastActiveAt   DateTime         @default(now())
+  store          Store            @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  shortlistItems ShortlistItem[]
+  requests       ShowroomRequest[]
+
+  @@index([storeId, lastActiveAt])
+}
+
+model ShortlistItem {
+  id                String          @id @default(cuid())
+  customerSessionId String
+  productId         String
+  addedAt           DateTime        @default(now())
+  customerSession   CustomerSession @relation(fields: [customerSessionId], references: [id], onDelete: Cascade)
+  product           Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([customerSessionId, productId])
+}
+
+model ShowroomRequest {
+  id                   String                @id @default(cuid())
+  storeId              String
+  customerSessionId    String
+  requestNumber        String
+  status               ShowroomRequestStatus @default(PENDING)
+  notes                String?
+  snapshotCustomerName String?
+  snapshotMobileNumber String?
+  acceptedById         String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  store                Store                 @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  customerSession      CustomerSession       @relation(fields: [customerSessionId], references: [id], onDelete: Restrict)
+  items                ShowroomRequestItem[]
+  acceptedBy           User?                 @relation("RequestAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@unique([storeId, requestNumber])
+  @@index([storeId, status, createdAt])
+}
+
+model ShowroomRequestItem {
+  id                  String                     @id @default(cuid())
+  showroomRequestId   String
+  productId           String
+  productNameSnapshot String
+  productSlugSnapshot String
+  publicCodeSnapshot  String?
+  primaryImageSnapshot String?
+  status              ShowroomRequestItemStatus @default(REQUESTED)
+  remark              String?
+  createdAt           DateTime                   @default(now())
+  showroomRequest     ShowroomRequest            @relation(fields: [showroomRequestId], references: [id], onDelete: Cascade)
+  product             Product                    @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([showroomRequestId, productId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  storeId    String
+  userId     String?
+  entityType String
+  entityId   String
+  action     String
+  oldValue   Json?
+  newValue   Json?
+  createdAt  DateTime @default(now())
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([storeId, entityType, entityId, createdAt])
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}

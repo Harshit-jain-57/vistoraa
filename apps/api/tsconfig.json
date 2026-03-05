@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
+    "exactOptionalPropertyTypes": false,
+    "types": [
+      "node",
+      "jest"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "prisma/**/*.ts"
+  ]
+}

@@ -1,0 +1,9 @@
+process.env.NODE_ENV = 'test';
+process.env.API_PORT = '4000';
+process.env.WEB_URL = 'http://localhost:3000';
+process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/vistora';
+process.env.JWT_ACCESS_SECRET = '12345678901234567890123456789012';
+process.env.JWT_REFRESH_SECRET = 'abcdefghijklmnopqrstuvwxyz123456';
+process.env.ACCESS_TOKEN_TTL = '15m';
+process.env.REFRESH_TOKEN_TTL = '7d';
+process.env.DEFAULT_STORE_SLUG = 'vistora-demo';
