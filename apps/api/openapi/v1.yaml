@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: Vistora API
+  version: 1.0.0
+  description: Backend API for the Vistora assisted wholesale catalogue platform.
+servers:
+  - url: http://localhost:4000
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Login store staff or admin
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated successfully
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Auth]
+      responses:
+        '200':
+          description: Token refreshed
+  /api/v1/products:
+    get:
+      summary: Get paginated public catalogue
+      tags: [Products]
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 12
+      responses:
+        '200':
+          description: Catalogue response
+  /api/v1/products/{slug}:
+    get:
+      summary: Get public product detail by slug
+      tags: [Products]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product detail
+        '404':
+          description: Product not found
+  /api/v1/categories:
+    get:
+      summary: Get public categories
+      tags: [Categories]
+      responses:
+        '200':
+          description: Category list
+  /api/v1/shortlist:
+    get:
+      summary: Fetch session shortlist
+      tags: [Shortlist]
+      parameters:
+        - in: query
+          name: sessionToken
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Shortlist contents
+  /api/v1/shortlist/items:
+    post:
+      summary: Add product to shortlist
+      tags: [Shortlist]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId]
+              properties:
+                sessionToken:
+                  type: string
+                productId:
+                  type: string
+                customerName:
+                  type: string
+                mobileNumber:
+                  type: string
+      responses:
+        '201':
+          description: Shortlist updated
+  /api/v1/shortlist/items/{id}:
+    delete:
+      summary: Remove shortlist item
+      tags: [Shortlist]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: sessionToken
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item removed
+  /api/v1/requests:
+    post:
+      summary: Submit showroom request
+      tags: [Showroom Requests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionToken]
+              properties:
+                sessionToken:
+                  type: string
+                customerName:
+                  type: string
+                mobileNumber:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Request submitted
+  /api/v1/admin/products:
+    get:
+      summary: List admin/staff products
+      tags: [Admin Products]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Product list
+    post:
+      summary: Create product
+      tags: [Admin Products]
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Product created
+  /api/v1/admin/products/{id}:
+    patch:
+      summary: Update product
+      tags: [Admin Products]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Product updated
+    delete:
+      summary: Archive product
+      tags: [Admin Products]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Product archived
+  /api/v1/admin/categories:
+    get:
+      summary: List categories for admin
+      tags: [Admin Categories]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Category list
+    post:
+      summary: Create category
+      tags: [Admin Categories]
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Category created
+  /api/v1/admin/requests:
+    get:
+      summary: List showroom requests for staff/admin
+      tags: [Admin Requests]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Request list
+  /api/v1/admin/requests/{id}/status:
+    patch:
+      summary: Update showroom request status
+      tags: [Admin Requests]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Request updated
+  /api/v1/admin/users:
+    get:
+      summary: List users
+      tags: [Admin Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User list
+    post:
+      summary: Create staff/admin user
+      tags: [Admin Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: User created
+  /api/v1/admin/store:
+    get:
+      summary: Get store settings
+      tags: [Store]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Store details
+    patch:
+      summary: Update store settings
+      tags: [Store]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Store updated
+  /api/v1/admin/media/upload:
+    post:
+      summary: Upload product media
+      tags: [Media]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: File uploaded
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
