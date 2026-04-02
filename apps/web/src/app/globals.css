@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --peach-cream: #ffebd0;
+  --deep-aqua: #278783;
+  --deep-aqua-dark: #1d6b68;
+  --deep-aqua-light: #34a39e;
+  --white: #ffffff;
+  --off-white: #fffdfa;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.16);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --text-dark: #1a1a1a;
+  --text-muted: #666666;
+  --text-light: rgba(255, 255, 255, 0.7);
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body), sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(255, 235, 208, 0.8), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(52, 163, 158, 0.12), transparent 25%),
+    var(--off-white);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.display-font {
+  font-family: var(--font-display), serif;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(39, 135, 131, 0.08);
+}
